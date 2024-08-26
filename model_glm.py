@@ -310,14 +310,14 @@ data given the user provided samples. </Task>"""
                 X = dummy_df[self.pred_Xcols].to_numpy()
                 y = df_comb['real_identifier'].to_numpy()
                 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                dtrain = xgb.DMatrix(X_train, label=y_train)
-                dtest = xgb.DMatrix(X_test, label=y_test)
+
                 if not self.model:
-                    self.model = xgb.train(self.params, dtrain, num_boost_round=20)
+                    self.model = SGDClassifier(loss = "log_loss", max_iter = 10, tol=None, warm_start = True)
+                    self.model.partial_fit(X_train, y_train, classes = classes)
                 else:
-                    self.model = xgb.train(self.params, dtrain, num_boost_round=20, xgb_model=self.model)
-                preds = self.model.predict(dtest)
-                y_pred = [1 if pred > 0.5 else 0 for pred in preds]
+                    self.model.partial_fit(X_train, y_train, classes = classes)
+                    
+                y_pred = self.model.predict(X_test)
                 accu = accuracy_score(y_test, y_pred)
 
                 with open(self.logfile, 'a') as f:
@@ -337,11 +337,10 @@ data given the user provided samples. </Task>"""
                     self.prompt_score_dict[index]['X_test'] = X_test
                     self.prompt_score_dict[index]['y_test'] = y_test
                     for index_temp, dict_temp in self.prompt_score_dict.items():
-                        dX_temp = xgb.DMatrix(dict_temp['X_test'])
+                        X_test_temp = dict_temp['X_test']
                         y_test_temp = dict_temp['y_test']
-                        preds_temp = self.model.predict(dX_temp)
-                        y_pred_temp = [1 if pred > 0.5 else 0 for pred in preds_temp]
-                        accu_temp = accuracy_score(y_test_temp, y_pred_temp)
+                        preds_temp = self.model.predict(X_test_temp)
+                        accu_temp = accuracy_score(y_test_temp, preds_temp)
                         self.prompt_score_dict[index_temp]['accu'] = accu_temp
                     # start = max(0, len(self.prompt_score_dict) - 3)
                     # last_accu_values = [value['accu'] for value in islice(self.prompt_score_dict.values(), start, None)]
@@ -376,10 +375,10 @@ data given the user provided samples. </Task>"""
             
             sys_info, user_info = self.instruction(sample, refined_final_prompt)
             
-            with open(self.logfile, 'a') as f:
-                f.write('@@@@@@@@@@@@@@@@@@@@@@Final generation prompt:')
-                f.write(f'System prompt: {sys_info}')
-                f.write(f'User prompt:{user_info}')
+            # with open(self.logfile, 'a') as f:
+            #     f.write('@@@@@@@@@@@@@@@@@@@@@@Final generation prompt:')
+            #     f.write(f'System prompt: {sys_info}')
+            #     f.write(f'User prompt:{user_info}')
 
             resp_temp = self.gen_client.chat.completions.create(
                     model=self.gen_model_nm, 
@@ -436,10 +435,8 @@ data given the user provided samples. </Task>"""
                 dummy_df = self._check_cols(dummy_df)
                 X = dummy_df[self.pred_Xcols].to_numpy()
                 y = df_comb['real_identifier'].to_numpy()
-                dtest = xgb.DMatrix(X, label=y)
-                preds = self.model.predict(dtest)
-                y_pred = [1 if pred > 0.5 else 0 for pred in preds]
-                accu = accuracy_score(y, y_pred)
+                preds = self.model.predict(X)
+                accu = accuracy_score(y, preds)
 
                 with open(self.logfile, 'a') as f:
                     f.write(f">>>>>>>>>>>>>>> Epoch: {e}, batch: {ii} <<<<<<<<<<<<<<<< \n")
@@ -503,4 +500,44 @@ data given the user provided samples. </Task>"""
             j = j + self.real_samples_num
         
         res_df = self.process_response(res)
+        return res_df
+    
+
+    def conditional_sampling_without_opt(self, cond, num_folds, temperature):
+        
+        res = []
+        j = 0
+
+        while j < len(self.real_data):
+            sampled_rows = self.real_data.loc[j : (j+self.real_samples_num-1), self.cols].copy()
+            self.sampled_rows_hist = []
+            sample = self.row2dict(sampled_rows)
+            
+            sys_info, user_info = self.instruction(sample, self.tobe_refined, cond)
+            
+            with open(self.logfile, 'a') as f:
+                f.write('@@@@@@@@@@@@@@@@@@@@@@Final generation prompt:')
+                f.write(f'System prompt: {sys_info}')
+                f.write(f'User prompt:{user_info}')
+
+            resp_temp = self.gen_client.chat.completions.create(
+                    model=self.gen_model_nm, 
+                    messages=[
+                        {"role": "system", "content": sys_info },
+                        {"role": "user", "content": user_info}
+                    ],
+                    temperature=temperature,
+                    n = num_folds
+            )
+            print(resp_temp)
+            if num_folds > 1:
+                for fold in range(num_folds):
+                    res.append(resp_temp.choices[fold].message.content)
+            else:
+                res.append(resp_temp.choices[0].message.content)
+
+            j = j + self.real_samples_num
+        
+        res_df = self.process_response(res)
+        print(res_df)
         return res_df

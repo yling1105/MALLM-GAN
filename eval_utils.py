@@ -7,7 +7,8 @@ from cython_metric import mixed_distance
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
-from sklearn.neural_network import MLPRegressor
+from xgboost import XGBClassifier
+from xgboost import XGBRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import f1_score, accuracy_score, roc_auc_score, r2_score
@@ -77,10 +78,11 @@ def _get_nn_model(train: DataFrame, cat_slice) -> Tuple[np.ndarray]:
     nearest_neighbor_model.fit(train)
     return nearest_neighbor_model
 
-def _calculate_dcr(tgt_data, syn_data, meta_data: dict):
+def _calculate_dcr(tgt_data0, syn_data0, meta_data: dict):
     category_cols = [col for col, val in meta_data['columns'].items() if val['sdtype'] == 'categorical']
     numerical_cols = [col for col, val in meta_data['columns'].items() if val['sdtype'] != 'categorical']
-
+    tgt_data = tgt_data0.copy()
+    syn_data = syn_data0.copy()
     # Encode categorical data
     label_encoders = {}
     df_comb = pd.concat([tgt_data, syn_data])
@@ -128,12 +130,25 @@ def compare_MLE(X_test, y_test, X_train, y_train, task, seed = 1234):
     classification_model = {
         "Logistic Regression": LogisticRegression(random_state=seed, max_iter=3000),
         "Random Forest": RandomForestClassifier(max_depth=3, n_jobs=10, random_state=seed),
-        "SVC": SVC(random_state=seed)
+        "SVC": SVC(random_state=seed),
+        "XGB": XGBClassifier(
+                    objective='binary:logistic',  # for binary classification, change for multiclass
+                    n_estimators=100,             # number of boosting rounds
+                    learning_rate=0.1,            # step size shrinkage
+                    max_depth=3,                  # maximum depth of a tree
+                    eval_metric='logloss'         # evaluation metric
+                )
     }
 
     regression_models = {
         "Linear Regression": LinearRegression(),
         "Decision Tree": DecisionTreeRegressor(max_depth=3, random_state=seed),
+        "XGB": XGBRegressor(
+                objective='reg:squarederror',  # regression with squared loss
+                n_estimators=100,              # number of boosting rounds
+                learning_rate=0.1,             # step size shrinkage
+                max_depth=3,                   # maximum depth of a tree
+        )
     }
 
     if task == 'classification':

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from imblearn.over_sampling import SMOTE
 
-def smote_gen(data_nm, subsample):
+def smote_gen(data_nm, subsample, x_cols, y_col):
     train_path = f"../sample/{data_nm}/df{subsample}.csv"
     test_path = f"../sample/{data_nm}/df{subsample}_test.csv"
 
@@ -10,4 +10,5 @@ def smote_gen(data_nm, subsample):
     
     df_train = pd.read_csv(train_path)
     df_test = pd.read_csv(test_path)
+
     

@@ -1,5 +1,5 @@
 {
-    "name": "erich25",
+    "name": "erich50",
     "task_type": "regression",
     "header": "infer",
     "column_names": [
@@ -69,8 +69,8 @@
         28
     ],
     "file_type": "csv",
-    "data_path": "data/erich25/df25.csv",
-    "test_path": "data/erich25/df25_test.csv",
+    "data_path": "data/erich50/df50.csv",
+    "test_path": "data/erich50/df50_test.csv",
     "column_info": {
         "sex": "str",
         "age": "float",

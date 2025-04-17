@@ -20,6 +20,7 @@ import os
 from sklearn.preprocessing import LabelEncoder
 
 
+
 def _prepare_data_for_privacy_metrics(
     tgt_data: DataFrame,
     syn_data: DataFrame,
@@ -357,3 +358,5 @@ def plot_shape_summary(path):
 
     
 
+def auto_eval(data_path):
+    

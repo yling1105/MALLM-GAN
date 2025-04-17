@@ -14,8 +14,9 @@ import causalml as cm
 import copy
 import bnlearn as bn
 import numpy as np
-from eval_utils import data_profiling
+from collections import defaultdict, deque
 import time
+
 
 def extract_json(input_string):
     start_pos = input_string.find('[')  # Find the start of the JSON object
@@ -45,23 +46,100 @@ def extract_json(input_string):
 
 def get_causal_graph(df: pd.DataFrame, methodtype='hc', scoretype='bic'):
     causal_model = bn.structure_learning.fit(df, methodtype, scoretype)
-    return str(causal_model['model_edges'])
+    return causal_model['model_edges']
+
+def build_causal_graph(edges, cols, var_types=None):
+    """
+    Build a JSON-style causal graph from edge list and variable names.
+
+    Args:
+        edges (list of tuple): Each tuple is (parent, child)
+        cols (list of str): All variable names
+        var_types (dict, optional): Mapping from variable name to its type
+
+    Returns:
+        dict: Causal graph in JSON style
+    """
+    # Initialize parent list for each variable
+    parents_map = defaultdict(list)
+    for parent, child in edges:
+        parents_map[child].append(parent)
+
+    # Build final dictionary
+    causal_graph = {}
+    for var in cols:
+        causal_graph[var] = {
+            "type": var_types.get(var, "unknown") if var_types else "unknown",
+            "parents": parents_map.get(var, [])
+        }
+
+    return causal_graph
+
+def topological_sort(causal_graph):
+    """
+    Topologically sort the variables in a causal graph so that parents appear before children.
+    
+    Args:
+        causal_graph (dict): The parsed causal graph dictionary.
+    
+    Returns:
+        list: Topologically sorted list of variable names.
+    """
+    graph = defaultdict(list)
+    in_degree = defaultdict(int)
+
+    for child, meta in causal_graph.items():
+        for parent in meta.get("parents", []):
+            graph[parent].append(child)
+            in_degree[child] += 1
+        if child not in in_degree:
+            in_degree[child] = 0  # ensure every node appears at least once
+
+    queue = deque([node for node in causal_graph if in_degree[node] == 0])
+    sorted_vars = []
+
+    while queue:
+        node = queue.popleft()
+        sorted_vars.append(node)
+
+        for neighbor in graph[node]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+
+    if len(sorted_vars) != len(causal_graph):
+        raise ValueError("Cycle detected in the causal graph.")
+
+    return sorted_vars
 
 
-def init_tobe_refined(df, cols, num_samples, methodtype, scoretype):
-    causal_graph = get_causal_graph(df[cols], methodtype, scoretype)
+def extract_and_sort_causal_graph(text):
+    """
+    Main function that extracts JSON from text and returns sorted variable list.
+    """
+    causal_graph = extract_json(text)
+    sorted_vars = topological_sort(causal_graph)
+    return sorted_vars
 
-    prompt = f'''<Causal structure>Here is the causal structure of the data, where a tuple (A, B) indicates A causes B:
+def init_tobe_refined(df, cols, num_samples, methodtype, scoretype, sort):
+    causal_edges = get_causal_graph(df[cols], methodtype, scoretype)
+    causal_graph = build_causal_graph(causal_edges, cols)
+    prompt = f'''<Causal structure>Here is the causal structure of the data:
 {causal_graph}</Causal structure>
 
 <Task> The ultimate goal is to produce accurate and convincing synthetic
 data that dutifully represents these causal relationships given the user provided samples. </Task>
 '''
-    return prompt
+    sorted_var = topological_sort(causal_graph)
+    if sort:
+        df_sorted = df[sorted_var].copy()
+    else:
+        df_sorted = df.copy()
+    return prompt, df_sorted
 
 
 class MultiAgentGAN():
-    def __init__(self, gen_client, opt_client, gen_model_nm, opt_model_nm, params, real_data, cols,y_col, num_cols, meta_data, cate_desc, data_desc, logfile, gen_temperature=0.5, opt_temperature=0.5, use_fuzzy_samples=False, fuzzy_samples_num=2, num_score_pairs=3, real_samples_num=2,  methodtype="hc", scoretype="bic", use_causal_graph=True) -> None:
+    def __init__(self, gen_client, opt_client, gen_model_nm, opt_model_nm, params, real_data, cols,y_col, num_cols, meta_data, cate_desc, data_desc, logfile, gen_temperature=0.5, opt_temperature=0.5, use_fuzzy_samples=False, fuzzy_samples_num=2, num_score_pairs=3, real_samples_num=2,  methodtype="hc", scoretype="bic", use_causal_graph=True, sort=False) -> None:
         '''
         api_key, api_version, and azure_endpoint are used to define an Azure client
 
@@ -72,6 +150,7 @@ class MultiAgentGAN():
         self.opt_client = opt_client
         self.gen_model_nm = gen_model_nm
         self.opt_model_nm = opt_model_nm
+        self.sort = sort
 
         self.params = params
         self.cols = cols
@@ -79,12 +158,12 @@ class MultiAgentGAN():
         self.num_cols = num_cols
         self.logfile = logfile
         real_data.reset_index(inplace=True, drop=True)
-        self.real_data = real_data
         self.data_desc = data_desc
         self.use_causal_graph = use_causal_graph
+        self.sort = sort
         
         if use_causal_graph:
-            self.tobe_refined = init_tobe_refined(real_data, cols, real_samples_num, methodtype, scoretype)
+            self.tobe_refined, self.real_data = init_tobe_refined(real_data, cols, real_samples_num, methodtype, scoretype, sort)
         else:
             self.tobe_refined = ""
 
@@ -111,17 +190,12 @@ class MultiAgentGAN():
             temptemp = '{' + f'sample {i}' + '}'
             temp.append(temptemp)
         self.response_template = str(temp)
-
         self.real_samples_num = real_samples_num
-        
         self.num_score_pairs = num_score_pairs # In the optimizer, how many examples will be provided to the optimizer
-
         self.use_fuzzy_samples = use_fuzzy_samples
         self.fuzzy_samples_num = fuzzy_samples_num
-
         self.gen_temperature = gen_temperature
         self.opt_temperature = opt_temperature
-        
         self.generator_completion_tokens = 0
         self.generator_prompt_tokens = 0
         self.optimizer_completion_tokens = 0
@@ -228,8 +302,6 @@ data given the user provided samples. </Task>"""
             else:
                 res.append(resp_temp.choices[0].message.content)
 
-            
-
             j = j + self.real_samples_num
         index = str(epoch)+'-'+str(i)
         self.res[index] = res
@@ -267,8 +339,10 @@ data given the user provided samples. </Task>"""
         # This agent is used to optimize the prompt given instruction-score pairs
         optim_sys_info = f'''You are a prompt optimizer. Your task is to optimize prompts for generating high-quality synthetic data. Aim to lower the scores associated with each casual structure and prompt, where a lower score reflects better quality. Here are the steps:
 1. Examine the existing prompt-score pairs.
-2. Adjust the causal structure to better represent the underlying relationships by adding or removing connections, and consider incorporating new features from the list {self.cols}.
+2. Consider the following questions: Are there any links you'd like to add or to be removed? Any whose direction should be reversed? ONLY consider the variables exist in JSON. Do not remove the variables from JSON.
+3. Output a new valid JSON that you think would provide complete information for predicting the outcome and the improved representation of the causal relationships between the variables.
 3. Modify the task guidance to align with the revised causal structure, ensuring it aids in reducing the score.'''
+
         inst_score = ""
         lowest_n = sorted(self.prompt_score_dict.items(), key=lambda x: x[1]['accu'])[:self.num_score_pairs]
 
@@ -290,7 +364,7 @@ data given the user provided samples. </Task>"""
                 temperature = self.opt_temperature)
             
         except:
-            time.sleep(60)
+            time.sleep(20)
             response = self.opt_client.chat.completions.create(
                 model=self.opt_model_nm,
                 messages = [
@@ -299,6 +373,11 @@ data given the user provided samples. </Task>"""
                 ],
                 temperature = self.opt_temperature)
         refined_prompt = response.choices[0].message.content
+        
+        if self.sort:
+            sorted_var = extract_and_sort_causal_graph(refined_prompt)
+            self.real_data = self.real_data[sorted_var]
+        
         return refined_prompt
     
     def _check_cols(self, df):
@@ -575,5 +654,4 @@ data given the user provided samples. </Task>"""
             j = j + self.real_samples_num
         
         res_df = self.process_response(res)
-        print(res_df)
         return res_df

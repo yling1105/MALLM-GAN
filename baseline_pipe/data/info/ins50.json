@@ -1,5 +1,5 @@
 {
-    "name": "ins25",
+    "name": "ins50",
     "task_type": "regression",
     "header": "infer",
     "column_names": [
@@ -25,8 +25,8 @@
         6
     ],
     "file_type": "csv",
-    "data_path": "data/ins25/df25.csv",
-    "test_path": "data/ins25/df25_test.csv",
+    "data_path": "data/ins50/df50.csv",
+    "test_path": "data/ins50/df50_test.csv",
     "column_info": {
         "age": "float",
         "sex": "str",

@@ -18,7 +18,7 @@ from sdmetrics.reports.single_table import QualityReport
 from sdv.metadata import SingleTableMetadata
 import os
 from sklearn.preprocessing import LabelEncoder
-
+from flaml import AutoML
 
 
 def _prepare_data_for_privacy_metrics(
@@ -354,9 +354,50 @@ def plot_shape_summary(path):
     
     return pd.DataFrame(records)
 
-    
 
-    
 
-def auto_eval(data_path):
-    
+def compare_MLE_autoML(X_test, y_test, X_train, y_train, task, seed=1234, time_budget=60):
+    '''
+    Use AutoML to find the best model on synthetic training data and evaluate on real test data.
+    '''
+    automl = AutoML()
+    performance = {}
+
+    if task == 'classification':
+        automl_settings = {
+            "time_budget": time_budget,  # seconds
+            "metric": 'f1',
+            "task": 'classification',
+            "log_file_name": "automl_classification.log",
+            "seed": seed
+        }
+
+    elif task == 'regression':
+        automl_settings = {
+            "time_budget": time_budget,
+            "metric": 'r2',
+            "task": 'regression',
+            "log_file_name": "automl_regression.log",
+            "seed": seed
+        }
+
+    # Run AutoML search
+    automl.fit(X_train=X_train, y_train=y_train, **automl_settings)
+
+    # Predict and score
+    y_pred = automl.predict(X_test)
+
+    if task == 'classification':
+        performance['AutoML'] = {
+            'f1 score': f1_score(y_test, y_pred, average='weighted'),
+            'accuracy': accuracy_score(y_test, y_pred),
+            'best_model': str(automl.model)
+        }
+    else:
+        performance['AutoML'] = {
+            'R2': r2_score(y_test, y_pred),
+            'best_model': str(automl.model)
+        }
+
+    return performance
+

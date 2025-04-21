@@ -17,7 +17,41 @@ import numpy as np
 from collections import defaultdict, deque
 import time
 
+def extract_json_dag(text: str) -> dict:
+    """
+    Extract the *first* balanced {...} block and return it as a Python dict.
+    Works with both real JSON and Python‑style single‑quoted dicts.
+    """
+    tag = re.search(r"<\s*Causal\s+structure\s*>(.*?)</\s*Causal\s+structure\s*>",
+                    text, re.IGNORECASE | re.DOTALL)
+    candidate = tag.group(1) if tag else text
 
+    start = candidate.find('{')
+    if start == -1:
+        raise ValueError("No opening brace '{' found")
+
+    depth = 0
+    for i, ch in enumerate(candidate[start:], start):
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                block = candidate[start:i + 1]
+                break
+    else:
+        raise ValueError("Unbalanced braces – no matching '}' found")
+
+    try:
+        return json.loads(block)
+    except json.JSONDecodeError:
+        pass  # fall through to Python literal
+
+    try:
+        return ast.literal_eval(block)
+    except Exception as e:
+        raise ValueError(f"Unable to parse object: {e}")
+    
 def extract_json(input_string):
     start_pos = input_string.find('[')  # Find the start of the JSON object
     if start_pos == -1:
@@ -69,7 +103,6 @@ def build_causal_graph(edges, cols, var_types=None):
     causal_graph = {}
     for var in cols:
         causal_graph[var] = {
-            "type": var_types.get(var, "unknown") if var_types else "unknown",
             "parents": parents_map.get(var, [])
         }
 
@@ -117,7 +150,7 @@ def extract_and_sort_causal_graph(text):
     """
     Main function that extracts JSON from text and returns sorted variable list.
     """
-    causal_graph = extract_json(text)
+    causal_graph = extract_json_dag(text)
     sorted_vars = topological_sort(causal_graph)
     return sorted_vars
 
@@ -203,7 +236,9 @@ class MultiAgentGAN():
         self.loss_record = []
         self.sampled_rows_hist = []
         self.prompt_optimize_instruction = '''Your updated prompt should explicitly include any modifications to the causal graph and guidance.  The aim is to lower the score. The updated prompt:
-'''         
+'''     
+        self.opt_trajectory = [] # Used to record the optimization prompt records
+        self.causal_graph_traj = [] # Used to record the causal graph evolution during optimization
     
     def row2dict(self, rows):
         rows.reset_index(inplace=True, drop=True)
@@ -337,11 +372,10 @@ data given the user provided samples. </Task>"""
     
     def optimizer_agent(self):
         # This agent is used to optimize the prompt given instruction-score pairs
-        optim_sys_info = f'''You are a prompt optimizer. Your task is to optimize prompts for generating high-quality synthetic data. Aim to lower the scores associated with each casual structure and prompt, where a lower score reflects better quality. Here are the steps:
+        optim_sys_info = '''You are a prompt optimizer. Your task is to optimize prompts for generating high-quality synthetic data. Aim to lower the scores associated with each casual structure and prompt, where a lower score reflects better quality. Here are the steps:
 1. Examine the existing prompt-score pairs.
 2. Consider the following questions: Are there any links you'd like to add or to be removed? Any whose direction should be reversed? ONLY consider the variables exist in JSON. Do not remove the variables from JSON.
-3. Output a new valid JSON that you think would provide complete information for predicting the outcome and the improved representation of the causal relationships between the variables.
-3. Modify the task guidance to align with the revised causal structure, ensuring it aids in reducing the score.'''
+3. Output a new valid JSON that you think would provide complete information for predicting the outcome and the improved representation of the causal relationships between the variables. Use the SAME structures and keys as the provided JSON data, e.g. {key1: {"parents": [...], ...}}'''
 
         inst_score = ""
         lowest_n = sorted(self.prompt_score_dict.items(), key=lambda x: x[1]['accu'])[:self.num_score_pairs]
@@ -373,10 +407,12 @@ data given the user provided samples. </Task>"""
                 ],
                 temperature = self.opt_temperature)
         refined_prompt = response.choices[0].message.content
+        self.opt_trajectory.append(refined_prompt)
         
         if self.sort:
             sorted_var = extract_and_sort_causal_graph(refined_prompt)
             self.real_data = self.real_data[sorted_var]
+            self.causal_graph_traj.append(sorted_var)
         
         return refined_prompt
     

@@ -1,0 +1,145 @@
+{
+    "name": "magic800",
+    "task_type": "binclass",
+    "header": "infer",
+    "column_names": [
+        "major axis of ellipse (mm)",
+        "minor axis of ellipse (mm)",
+        "10-log of sum of content of all pixels (#phot)",
+        "ratio of sum of two highest pixels over fSize",
+        "ratio of highest pixel over fSize",
+        "distance from highest pixel to center, projected onto major axis",
+        "3rd root of third moment along major axis (mm)",
+        "3rd root of third moment along minor axis (mm)",
+        "angle of major axis with vector to origin (deg)",
+        "distance from origin to center of ellipse (mm)",
+        "gamma (signal), hadron (background)"
+    ],
+    "num_col_idx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+    ],
+    "cat_col_idx": [],
+    "target_col_idx": [
+        10
+    ],
+    "file_type": "csv",
+    "data_path": "data/magic800/df800.csv",
+    "test_path": "data/magic800/df_test.csv",
+    "column_info": {
+        "0": {},
+        "type": "categorical",
+        "max": 421.2666,
+        "min": 5.6998,
+        "1": {},
+        "2": {},
+        "3": {},
+        "4": {},
+        "5": {},
+        "6": {},
+        "7": {},
+        "8": {},
+        "9": {},
+        "10": {},
+        "categorizes": [
+            "g",
+            "h"
+        ]
+    },
+    "train_num": 800,
+    "test_num": 200,
+    "idx_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 9,
+        "10": 10
+    },
+    "inverse_idx_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7,
+        "8": 8,
+        "9": 9,
+        "10": 10
+    },
+    "idx_name_mapping": {
+        "0": "major axis of ellipse (mm)",
+        "1": "minor axis of ellipse (mm)",
+        "2": "10-log of sum of content of all pixels (#phot)",
+        "3": "ratio of sum of two highest pixels over fSize",
+        "4": "ratio of highest pixel over fSize",
+        "5": "distance from highest pixel to center, projected onto major axis",
+        "6": "3rd root of third moment along major axis (mm)",
+        "7": "3rd root of third moment along minor axis (mm)",
+        "8": "angle of major axis with vector to origin (deg)",
+        "9": "distance from origin to center of ellipse (mm)",
+        "10": "gamma (signal), hadron (background)"
+    },
+    "metadata": {
+        "columns": {
+            "0": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "1": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "2": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "3": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "4": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "5": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "6": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "7": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "8": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "9": {
+                "sdtype": "numerical",
+                "computer_representation": "Float"
+            },
+            "10": {
+                "sdtype": "categorical"
+            }
+        }
+    }
+}

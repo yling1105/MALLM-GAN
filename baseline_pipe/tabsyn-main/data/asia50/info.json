@@ -1,0 +1,106 @@
+{
+    "name": "asia50",
+    "task_type": "binclass",
+    "header": "infer",
+    "column_names": [
+        "visit to Asia",
+        "tuberculosis",
+        "smoke",
+        "lung cancer",
+        "bronchitis",
+        "either tuberculosis or lung cancer",
+        "chest X-ray",
+        "Dyspnea"
+    ],
+    "num_col_idx": [],
+    "cat_col_idx": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+    ],
+    "target_col_idx": [
+        7
+    ],
+    "file_type": "csv",
+    "data_path": "data/asia50/df50.csv",
+    "test_path": "data/asia50/df50_test.csv",
+    "column_info": {
+        "0": {},
+        "type": "categorical",
+        "categorizes": [
+            0,
+            1
+        ],
+        "1": {},
+        "2": {},
+        "3": {},
+        "4": {},
+        "5": {},
+        "6": {},
+        "7": {}
+    },
+    "train_num": 50,
+    "test_num": 200,
+    "idx_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7
+    },
+    "inverse_idx_mapping": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5,
+        "6": 6,
+        "7": 7
+    },
+    "idx_name_mapping": {
+        "0": "visit to Asia",
+        "1": "tuberculosis",
+        "2": "smoke",
+        "3": "lung cancer",
+        "4": "bronchitis",
+        "5": "either tuberculosis or lung cancer",
+        "6": "chest X-ray",
+        "7": "Dyspnea"
+    },
+    "metadata": {
+        "columns": {
+            "0": {
+                "sdtype": "categorical"
+            },
+            "1": {
+                "sdtype": "categorical"
+            },
+            "2": {
+                "sdtype": "categorical"
+            },
+            "3": {
+                "sdtype": "categorical"
+            },
+            "4": {
+                "sdtype": "categorical"
+            },
+            "5": {
+                "sdtype": "categorical"
+            },
+            "6": {
+                "sdtype": "categorical"
+            },
+            "7": {
+                "sdtype": "categorical"
+            }
+        }
+    }
+}

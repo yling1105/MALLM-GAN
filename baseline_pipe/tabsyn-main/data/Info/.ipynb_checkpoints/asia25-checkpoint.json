@@ -1,0 +1,36 @@
+{
+    "name": "asia25",
+    "task_type": "binclass",
+    "header": "infer",
+    "column_names": [
+        "visit to Asia", 
+        "tuberculosis",
+        "smoke", 
+        "lung cancer", 
+        "bronchitis",
+        "either tuberculosis or lung cancer", 
+        "chest X-ray", 
+        "Dyspnea"
+    ],
+    "num_col_idx": [
+    ],
+    "cat_col_idx": [
+        0, 1, 2, 3, 4, 5, 6
+    ],
+    "target_col_idx": [
+        7
+    ],
+    "file_type": "csv",
+    "data_path": "data/asia25/df25.csv",
+    "test_path": "data/asia25/df25_test.csv",
+    "column_info": {
+        "visit to Asia": "float",
+        "tuberculosis": "float",
+        "smoke": "float",
+        "lung cancer": "float",
+        "bronchitis": "float",
+        "either tuberculosis or lung cancer": "float",
+        "chest X-ray": "float",
+        "Dyspnea": "float"
+    }
+}

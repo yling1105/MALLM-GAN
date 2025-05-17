@@ -1,0 +1,39 @@
+{
+    "name": "ins100",
+    "task_type": "regression",
+    "header": "infer",
+    "column_names": [
+        "age",
+        "sex",
+        "bmi",
+        "children",
+        "smoker",
+        "region",
+        "charges"
+    ],
+    "num_col_idx": [
+        0,
+        2,
+        3
+    ],
+    "cat_col_idx": [
+        1, 
+        4,
+        5
+    ],
+    "target_col_idx": [
+        6
+    ],
+    "file_type": "csv",
+    "data_path": "data/ins100/data100.csv",
+    "test_path": "data/ins100/data_test.csv",
+    "column_info": {
+        "age": "float",
+        "sex": "str",
+        "bmi": "float",
+        "children": "float",
+        "smoker": "str",
+        "region": "str",
+        "charges": "float"
+    }
+}

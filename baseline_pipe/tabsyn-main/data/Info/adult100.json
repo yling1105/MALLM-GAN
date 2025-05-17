@@ -1,0 +1,60 @@
+{
+    "name": "adult100",
+    "task_type": "binclass",
+    "header": "infer",
+    "column_names": [
+        "age",
+        "workclass",
+        "education",
+        "education-num",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "capital-gain",
+        "capital-loss",
+        "hours-per-week",
+        "native-country",
+        "Income"
+    ],
+    "num_col_idx": [
+        0,
+        3,
+        9,
+        10,
+        11
+    ],
+    "cat_col_idx": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        7,
+        8,
+        12
+    ],
+    "target_col_idx": [
+        13
+    ],
+    "file_type": "csv",
+    "data_path": "data/adult100/data100.csv",
+    "test_path": "data/adult100/data_test.csv",
+    "column_info": {
+        "age": "float",
+        "workclass": "str",
+        "education": "str",
+        "education-num": "float",
+        "marital-status": "str",
+        "occupation": "str",
+        "relationship": "str",
+        "race": "str",
+        "sex": "str",
+        "capital-gain": "float",
+        "capital-loss": "float",
+        "hours-per-week": "float",
+        "native-country": "str",
+        "Income": "str"
+    }
+}

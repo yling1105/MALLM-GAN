@@ -1,5 +1,6 @@
 # MALLM-GAN: Multi-Agent Large Language Model as Generative Adversarial Network for Synthesizing Tabular Data
 
-The code respository is for the paper: MALLM-GAN: Multi-Agent Large Language Model as Generative Adversarial Network for Synthesizing Tabular Data (https://arxiv.org/abs/2406.10521)
+The code respository is for the paper: MALLM-GAN: Multi-Agent Large Language Model as Generative Adversarial Network for Synthesizing Tabular Data
 
-## Reference
+- Main code: "model_glm.py"
+- Example usage on Adult dataset: "adult-glm.ipynb"
